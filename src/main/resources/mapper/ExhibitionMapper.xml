@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.feiyi.dao.ExhibitionDao">
+
+    <!--    查询所有已审核-->
+    <select id="findAll" resultType="com.feiyi.domain.Exhibition" >
+        select e.*,u.username
+        from exhibition e
+        left join user u on u.id = e.createdId
+        where e.status=1 or e.status=0
+        order by year(e.created_date) desc
+    </select>
+
+<!--    统计所有还未审核的展馆-->
+    <select id="countExhibitionByStatus" resultType="java.lang.Integer">
+        select count(*)
+        from exhibition
+        where status = -1
+    </select>
+
+<!--    查询各种状态的展览馆-->
+    <select id="findAllByStatus" resultType="com.feiyi.domain.Exhibition" >
+        select e.*,u.username
+        from exhibition e
+        left join user u on u.id = e.createdId
+        where e.status=#{status}
+        order by year(e.created_date) desc
+    </select>
+
+    <!--根据title查询-->
+    <select id="findByTitle" resultType="com.feiyi.domain.Exhibition" >
+        select *
+        from exhibition
+        where title LIKE CONCAT('%',#{title},'%')
+    </select>
+
+    <!--根据id查询-->
+    <select id="findById" resultType="com.feiyi.domain.Exhibition" >
+        select e.*,u.username username
+        from exhibition e
+        left join user u
+        on e.createdId = u.id
+        where e.id = #{id}
+    </select>
+
+    <!--    添加展览馆-->
+    <insert id="addExhibition" parameterType="Exhibition">
+        insert into
+        exhibition (created_date,title,description,createdId,accommodate,status,url)
+        values (#{created_date},#{title},#{description},#{createdId},#{accommodate},#{status},#{url})
+        <selectKey resultType="Integer" order="AFTER" keyProperty="id">
+            SELECT LAST_INSERT_ID() AS id
+        </selectKey>
+    </insert>
+
+    <!--    修改展览馆-->
+    <update id="updateExhibition" parameterType="Exhibition">
+        update exhibition  set
+            created_date=#{created_date},title=#{title},description=#{description},createdId=#{createdId},accommodate=#{accommodate},status=#{status}
+        where
+            id =#{id}
+    </update>
+
+    <!--    修改展览馆状态-->
+    <update id="updateExhibitionStatus" parameterType="Exhibition">
+        update exhibition set
+            status=#{status}
+        where
+            id =#{id}
+    </update>
+
+    <!--    删除展馆-->
+    <delete id="deleteExhibition" >
+        delete from exhibition where id = #{id}
+    </delete>
+
+<!--    根据展览馆的发布日期、名称、作者、描述查找-->
+    <select id="findExhibition" resultType="com.feiyi.domain.Exhibition" >
+        select e.*,u.username username
+        from exhibition e
+        left join user u on e.createdId=u.id
+        where CONCAT(e.title,'',e.created_date,'',u.username,e.description) LIKE CONCAT('%',#{keyword}, '%')
+        and
+        (e.status=1 or e.status=0)
+    </select>
+
+    <select id="findExhibition0" resultType="com.feiyi.domain.Exhibition" >
+        select e.*,u.username username
+        from exhibition e
+        left join user u on e.createdId=u.id
+        where CONCAT(e.title,'',e.created_date,'',u.username,e.description) LIKE CONCAT('%',#{keyword}, '%')
+        and
+        e.status=-1
+    </select>
+
+    <select id="findByAll" resultType="com.feiyi.domain.Exhibition" >
+        select e.*,u.username username
+        from exhibition e
+        left join user u on e.createdId=u.id
+        where CONCAT(e.title,'',e.created_date,'',u.username,e.description) LIKE CONCAT('%',#{keyword}, '%')
+        and e.status=1
+    </select>
+</mapper>

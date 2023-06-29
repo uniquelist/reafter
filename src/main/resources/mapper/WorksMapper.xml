@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.feiyi.dao.WorksDao">
+    <resultMap type="com.feiyi.domain.Works" id="worksMap">
+        <id property="id" column="id" />
+        <result property="title" column="title" />
+        <result property="description" column="description" />
+        <result property="url" column="url" />
+        <result property="createdby_id" column="createdby_id" />
+        <result property="created_date" column="created_date" />
+        <result property="status" column="status" />
+        <result property="categoryId" column="categoryId"/>
+
+        <collection  property="users"  ofType="com.feiyi.domain.User">
+            <id property="id" column="uid" />
+            <result property="username" column="username" />
+            <result property="password" column="password" />
+            <result property="email" column="email" />
+            <result property="phonenumber" column="phonenumber" />
+            <result property="sex" column="sex" />
+            <result property="created_date" column="ucreated_date" />
+            <result property="final_date" column="final_date" />
+            <result property="roleId" column="roleId" />
+            <result property="status" column="ustatus" />
+            <result property="birthday" column="birthday" />
+        </collection>
+    </resultMap>
+
+    <!--    查询已经被审核过的作品-->
+    <select id="findAll" resultMap="worksMap" parameterType="Integer">
+        select w.*,
+        u.id uid,u.username username,u.password password,u.email email,u.phonenumber phonenumber,
+        u.sex sex,u.created_date ucreated_date,u.final_date final_date,u.roleId roleId,u.status ustatus,
+        u.birthday birthday
+        from works w
+        left join user u on w.createdby_id=u.id
+        where (w.status=1 or w.status=-1)
+        and w.categoryId=#{categoryId}
+        order by year(w.created_date) desc
+    </select>
+
+    <!--    查询没有被拉黑的作品-->
+    <select id="findAllByStatus" resultMap="worksMap" parameterType="Integer" >
+        select w.*,
+        u.id uid,u.username username,u.password password,u.email email,u.phonenumber phonenumber,
+        u.sex sex,u.created_date ucreated_date,u.final_date final_date,u.roleId roleId,u.status ustatus,
+        u.birthday birthday
+        from works w
+        left join user u on w.createdby_id=u.id
+        where w.status=1
+        and w.categoryId=#{categoryId}
+        order by year(w.created_date) desc
+    </select>
+    <!--    查询没有被审核过的作品-->
+    <select id="findAll0" resultMap="worksMap" parameterType="Integer" >
+        select w.*,
+        u.id uid,u.username username,u.password password,u.email email,u.phonenumber phonenumber,
+        u.sex sex,u.created_date ucreated_date,u.final_date final_date,u.roleId roleId,u.status ustatus,
+        u.birthday birthday
+        from works w
+        left join user u on w.createdby_id=u.id
+        where w.status=0
+        and w.categoryId=#{categoryId}
+        order by year(w.created_date) desc
+    </select>
+
+    <!--    根据ID查找-->
+    <select id="findAllById" resultType="com.feiyi.domain.Works" >
+        select w.*,u.username username
+        from works w
+        left join user u on w.createdby_id=u.id
+        where w.id = #{id}
+    </select>
+
+    <!--    根据用户ID查找-->
+    <select id="findAllByUserId" resultType="com.feiyi.domain.Works" >
+        select w.*,u.username username
+        from works w
+        left join user u on w.createdby_id=u.id
+        where w.createdby_id = #{userId}
+        and w.categoryId = #{categoryId}
+    </select>
+
+    <select id="findByTitle"  parameterType="Map" resultMap="worksMap" >
+        select w.*,
+            u.id uid,u.username username,u.password password,u.email email,u.phonenumber phonenumber,
+            u.sex sex,u.created_date ucreated_date,u.final_date final_date,u.roleId roleId,u.status ustatus,
+            u.birthday birthday
+            from works w
+            left join user u on w.createdby_id=u.id
+            where CONCAT(w.title,'',w.created_date,'',u.username) LIKE CONCAT('%',#{keyword}, '%')
+            and w.categoryId=#{categoryId} and  (w.status=1 or w.status=-1)
+    </select>
+
+    <!--根据输入框内容查询(标题，日期，上传作者)-->
+    <select id="findByTitle0"  parameterType="Map" resultMap="worksMap" >
+        select w.*,
+            u.id uid,u.username username,u.password password,u.email email,u.phonenumber phonenumber,
+            u.sex sex,u.created_date ucreated_date,u.final_date final_date,u.roleId roleId,u.status ustatus,
+            u.birthday birthday
+            from works w
+            left join user u on w.createdby_id=u.id
+            where CONCAT(w.title,'',w.created_date,'',u.username) LIKE CONCAT('%',#{keyword}, '%')
+            and w.categoryId=#{categoryId} and  w.status=0
+    </select>
+
+    <!--    添加作品-->
+    <insert id="addWorks" parameterType="Works">
+        insert into
+        works (title,description,url,createdby_id,created_date,status,categoryId)
+        values (#{title},#{description},#{url},#{createdby_id},#{created_date},#{status},#{categoryId})
+        <selectKey resultType="Integer" order="AFTER" keyProperty="id">
+            SELECT LAST_INSERT_ID() AS id
+        </selectKey>
+    </insert>
+
+    <!--    修改作品状态-->
+    <update id="updateWorks" parameterType="Works">
+        update works set
+            status=#{status}
+        where
+            id =#{id}
+    </update>
+
+    <!--    根据id修改作品-->
+    <update id="updateWorksById" parameterType="com.feiyi.domain.Works">
+        update works set
+            title = #{title},
+            description = #{description},
+            url = #{url}
+        where
+            id =#{id}
+    </update>
+
+    <!--    删除作品-->
+    <delete id="deleteById" >
+        delete from works where id = #{id}
+    </delete>
+
+    <!--    统计待审核作品数量-->
+    <select id="countWorks" resultType="java.lang.Integer">
+        select count(*)
+        from works
+        where status = 0
+    </select>
+
+    <!--    统计进六年作品上传数量-->
+    <select id="countWorksByYear" resultType="com.feiyi.domain.CountWorksByYear" parameterType="Integer">
+        SELECT
+          YEAR(created_date) AS year,
+          COUNT(*) AS countWorks
+        FROM
+          works
+        WHERE
+          (year(created_date) >= year(DATE_SUB(NOW(), INTERVAL 5 YEAR)))
+          and categoryId=#{categoryId}
+        GROUP BY
+          year
+        UNION ALL
+        SELECT
+          years.year,
+          0 AS count
+        FROM
+          (SELECT YEAR(NOW()) AS year
+           UNION SELECT YEAR(DATE_SUB(NOW(), INTERVAL 1 YEAR))
+           UNION SELECT YEAR(DATE_SUB(NOW(), INTERVAL 2 YEAR))
+           UNION SELECT YEAR(DATE_SUB(NOW(), INTERVAL 3 YEAR))
+           UNION SELECT YEAR(DATE_SUB(NOW(), INTERVAL 4 YEAR))
+           UNION SELECT YEAR(DATE_SUB(NOW(), INTERVAL 5 YEAR))) AS years
+        LEFT JOIN
+          (SELECT YEAR(created_date) AS year
+           FROM works
+           WHERE (year(created_date) >= year(DATE_SUB(NOW(), INTERVAL 5 YEAR)))
+           and categoryId=#{categoryId}
+           GROUP BY `year`) AS counted_years
+        ON years.year = counted_years.year
+        WHERE counted_years.year IS NULL
+        ORDER BY year ASC;
+    </select>
+
+<!--    前台查找-->
+    <select id="findByAll"  parameterType="String" resultMap="worksMap" >
+        select w.*,
+            u.id uid,u.username username,u.password password,u.email email,u.phonenumber phonenumber,
+            u.sex sex,u.created_date ucreated_date,u.final_date final_date,u.roleId roleId,u.status ustatus,
+            u.birthday birthday
+            from works w
+            left join user u on w.createdby_id=u.id
+            where CONCAT(w.title,'',w.created_date,'',u.username) LIKE CONCAT('%',#{keyword}, '%')
+            and  w.status=1
+    </select>
+</mapper>

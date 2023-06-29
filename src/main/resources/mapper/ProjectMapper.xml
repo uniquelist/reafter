@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.feiyi.dao.ProjectDao">
+
+    <resultMap type="com.feiyi.domain.Projects" id="projectMap">
+        <id property="id" column="id" />
+        <result property="code" column="code" />
+        <result property="name" column="name" />
+        <result property="category_id" column="category_id" />
+        <result property="public_date" column="public_date" />
+        <result property="report_area" column="report_area" />
+        <result property="protect_area" column="protect_area" />
+
+        <collection  property="categoryList"  ofType="com.feiyi.domain.Category">
+            <id property="id" column="cid" />
+            <result property="categoryname" column="categoryname" />
+        </collection>
+    </resultMap>
+
+    <!--    查询所有-->
+    <select id="findAll" resultMap="projectMap" >
+        select p.*,
+        c.id cid,c.categoryname categoryname
+        from projects p
+        left join category c on p.category_id=c.id
+        order by year(public_date) desc
+    </select>
+
+    <!--    添加国家级项目-->
+    <insert id="addProject" parameterType="Projects">
+        insert into
+        projects (code,name,category_id,public_date,report_area,protect_area)
+        values (#{code},#{name},#{category_id},#{public_date},#{report_area},#{protect_area})
+        <selectKey resultType="Integer" order="AFTER" keyProperty="id">
+            SELECT LAST_INSERT_ID() AS id
+        </selectKey>
+    </insert>
+
+
+    <!--    修改国家级项目-->
+    <update id="updateProject" parameterType="Projects">
+        update projects set
+            code =#{code},
+            name=#{name},
+            category_id=#{category_id},
+            public_date=#{public_date},
+            report_area=#{report_area},
+            protect_area=#{protect_area}
+        where
+            id =#{id}
+    </update>
+
+    <!--    删除国家级项目-->
+    <delete id="deleteById" >
+        delete from projects where id = #{id}
+    </delete>
+
+    <select id="findAllCate" resultType="com.feiyi.domain.Category">
+        select category.*
+        from category
+    </select>
+
+    <select id="findById" resultType="Projects">
+        select projects.*
+        from projects
+        where id=#{id}
+    </select>
+
+    <!--    统计项目总数-->
+    <select id="countProject" resultType="java.lang.Integer">
+        select count(*)
+        from projects
+    </select>
+
+    <!--    统计项目各类型的占比-->
+    <!--<select id="countCateBai" resultType="com.feiyi.domain.CountByCategory">
+        SELECT c.categoryname type, ROUND(COUNT(*) * 100.0 / total_count,2)  AS countCategory
+        FROM projects p,category c,(SELECT COUNT(*) AS total_count FROM projects) AS t
+        WHERE p.category_id = c.id
+        GROUP BY c.categoryname;
+    </select>-->
+    <select id="countCateBai" resultType="com.feiyi.domain.CountByCategory">
+        SELECT c.categoryname type, count(*) AS countCategory
+        FROM projects p,category c
+        WHERE p.category_id = c.id
+        GROUP BY c.categoryname;
+    </select>
+
+    <!--    统计有多少个不同的年份-->
+    <select id="countYear" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT public_date) AS count_year
+        FROM projects
+    </select>
+
+    <!--    搜索（名称，日期，申报地区，保护地区，项目类别）-->
+    <select id="searchProject" resultMap="projectMap" parameterType="String">
+        select p.*,
+        c.id cid,c.categoryname categoryname
+        from projects p
+        left join category c on p.category_id=c.id
+        where CONCAT(p.name,'',p.public_date,'',p.report_area,'',p.protect_area,'',c.categoryname) LIKE CONCAT('%',#{keyword}, '%')
+        order by year(public_date) desc
+    </select>
+</mapper>

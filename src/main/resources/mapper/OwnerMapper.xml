@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.feiyi.dao.OwnerDao">
+    <resultMap type="com.feiyi.domain.Pcollect" id="collectMap">
+        <id property="id" column="id" />
+        <result property="userId" column="userId" />
+        <result property="collectedId" column="collectedId" />
+
+        <collection  property="works"  ofType="com.feiyi.domain.Works">
+            <id property="id" column="wid" />
+            <result property="title" column="wtitle" />
+            <result property="description" column="wdescription" />
+            <result property="url" column="wurl" />
+            <result property="createdby_id" column="wcreatedby_id" />
+            <result property="categoryId" column="wcategoryId" />
+            <result property="status" column="wstatus" />
+            <result property="created_date" column="wcreated_date" />
+        </collection>
+    </resultMap>
+
+    <resultMap type="com.feiyi.domain.Pexhibition" id="bookMap">
+        <id property="id" column="id" />
+        <result property="userId" column="userId" />
+        <result property="exhibitionId" column="exhibitionId" />
+
+        <collection  property="exhibitions"  ofType="com.feiyi.domain.Exhibition" >
+            <id property="id" column="eid" />
+            <result property="title" column="etitle" />
+            <result property="description" column="edescription" />
+            <result property="url" column="eurl" />
+            <result property="createdId" column="ecreatedId" />
+            <result property="accommodate" column="eaccommodate" />
+            <result property="status" column="estatus" />
+            <result property="created_date" column="ecreated_date" />
+        </collection>
+    </resultMap>
+
+
+<!--    添加收藏作品-->
+    <insert id="addCollect" parameterType="com.feiyi.domain.Pcollect">
+        insert into p_collected(userId,collectedId)
+        values (#{userId},#{collectedId})
+        <selectKey resultType="Integer" order="AFTER" keyProperty="id">
+            SELECT LAST_INSERT_ID() AS id
+        </selectKey>
+    </insert>
+
+<!--    取消收藏-->
+    <delete id="deleteCollectById" parameterType="com.feiyi.domain.Pcollect">
+        delete from p_collected
+        where collectedId = #{collectedId}
+    </delete>
+
+
+<!--    预约展馆-->
+    <insert id="addBook" parameterType="com.feiyi.domain.Pexhibition">
+        insert into p_exhibition(userId,exhibitionId)
+        values (#{userId},#{exhibitionId})
+        <selectKey resultType="Integer" order="AFTER" keyProperty="id">
+            SELECT LAST_INSERT_ID() AS id
+        </selectKey>
+    </insert>
+
+    <!--    取消预约-->
+    <delete id="deleteExhibitionById" parameterType="com.feiyi.domain.Pexhibition">
+        delete from p_exhibition
+        where exhibitionId = #{exhibitionId}
+    </delete>
+
+
+<!--    根据id统计该展馆已经有多少人预约了-->
+    <select id="countByEid" parameterType="Integer" resultType="Integer">
+        select
+        CASE
+        WHEN COUNT(*) > 0 THEN COUNT(*)
+        ELSE 0
+        END AS count
+        from p_exhibition
+        where exhibitionId = #{exhibitionId}
+    </select>
+
+<!--    根据作品Id查找该用户收藏的所有作品-->
+    <select id="findCollectById" resultMap="collectMap">
+        select pc.*,w.id wid, w.title wtitle,w.description wdescription,
+        w.url wurl,w.createdby_id wcreatedby_id,w.created_date wcreated_date,
+        w.status wstatus,w.categoryId wcategoryId
+        from p_collected pc
+        left join works w
+        on pc.collectedId = w.id
+        where pc.userId = #{userId}
+        and w.categoryId = #{categoryId}
+    </select>
+
+<!--    根据用户id查看该用户预约的展馆-->
+    <select id="findExhibitionById" resultMap="bookMap" parameterType="java.lang.Integer">
+        select pe.*,e.id eid, e.title etitle,e.description edescription,
+        e.url eurl,e.createdId ecreatedId,e.created_date ecreated_date,
+        e.status estatus,e.accommodate ecategoryId
+        from p_exhibition pe
+        left join exhibition e
+        on pe.exhibitionId = e.id
+        where pe.userId = #{userId}
+    </select>
+
+
+</mapper>

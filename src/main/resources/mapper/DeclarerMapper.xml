@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.feiyi.dao.DeclarerDao">
+
+    <resultMap type="com.feiyi.domain.Declarer" id="declarerMap">
+        <id property="id" column="id" />
+        <result property="person_code" column="person_code" />
+        <result property="name" column="name" />
+        <result property="category_id" column="category_id" />
+        <result property="sex" column="sex" />
+        <result property="nation_id" column="nation_id" />
+        <result property="project_code" column="project_code" />
+        <result property="report_area" column="report_area" />
+
+        <collection  property="categoryList"  ofType="com.feiyi.domain.Category">
+            <id property="id" column="cid" />
+            <result property="categoryname" column="categoryname" />
+        </collection>
+
+        <collection  property="nationsList"  ofType="com.feiyi.domain.Nation">
+            <id property="id" column="nid" />
+            <result property="name" column="nname" />
+        </collection>
+
+        <collection  property="projectsList"  ofType="com.feiyi.domain.Projects">
+            <id property="id" column="pid" />
+            <result property="code" column="code" />
+            <result property="name" column="pname" />
+            <result property="category_id" column="pcategory_id" />
+            <result property="public_date" column="public_date" />
+            <result property="report_area" column="preport_area" />
+            <result property="protect_area" column="protect_area" />
+        </collection>
+    </resultMap>
+
+<!--    查询所有-->
+    <!--<select id="findAll" resultMap="declarerMap" >
+        select d.*,
+        c.id cid,c.categoryname categoryname,
+        n.id nid,n.name nname,
+        p.id pid,p.code code,p.name pname,p.category_id pcategory_id,
+        p.public_date public_date,p.report_area preport_area,p.protect_area protect_area
+        from declarer d
+        left join category c on d.category_id=c.id
+        left join nation n on d.nation_id=n.id
+        left join projects p on d.project_code=p.code
+    </select>-->
+    <select id="findAll" resultMap="declarerMap" >
+        SELECT d.*, sub.pname,c.categoryname categoryname ,n.`name` nname
+        FROM declarer d
+        LEFT JOIN (
+            SELECT code, GROUP_CONCAT(name SEPARATOR '/') AS pname
+            FROM projects
+            GROUP BY code
+        ) AS sub ON d.project_code = sub.code
+        LEFT JOIN category c ON d.category_id = c.id
+        LEFT JOIN nation n ON d.nation_id = n.id
+        GROUP BY d.id
+    </select>
+
+<!--    添加国家级项目传承人-->
+    <insert id="addDeclarer" parameterType="Declarer">
+        insert into
+        declarer (person_code,name,category_id,sex,nation_id,project_code,report_area)
+        values (#{person_code},#{name},#{category_id},#{sex},#{nation_id},#{project_code},#{report_area})
+        <selectKey resultType="Integer" order="AFTER" keyProperty="id">
+            SELECT LAST_INSERT_ID() AS id
+        </selectKey>
+    </insert>
+
+
+    <!--    修改国家级项目传承人-->
+    <update id="updateDeclarer" parameterType="Declarer">
+        update declarer set
+            person_code =#{person_code},
+            name=#{name},
+            sex=#{sex},
+            nation_id=#{nation_id},
+            report_area=#{report_area}
+        where
+            id =#{id}
+    </update>
+
+<!--    删除国家级项目传承人-->
+    <delete id="deleteById" >
+        delete from declarer where id = #{id}
+    </delete>
+
+<!--    根据项目编号删除-->
+    <delete id="deleteByCode" parameterType="java.lang.Integer">
+        delete from declarer
+        WHERE project_code in(
+            SELECT code from projects
+            where id = #{id}
+        )
+    </delete>
+
+
+    <select id="findAllNation" resultType="com.feiyi.domain.Nation">
+        select nation.*
+        from nation
+    </select>
+
+    <select id="findById" resultType="Declarer">
+        select declarer.*
+        from declarer
+        where id=#{id}
+    </select>
+
+    <!--    负责人数量-->
+    <select id="countPeople" resultType="java.lang.Integer">
+        select count(*)
+        from declarer
+    </select>
+
+    <!--    各负责人来自哪个民族-->
+<!--    <select id="countByNation" resultType="com.feiyi.domain.CountByCategory">
+       SELECT n.`name`as nation, ROUND(COUNT(*) * 100.0 / total_count,2)  AS countNation
+        FROM declarer d,nation n,(SELECT COUNT(*) AS total_count FROM declarer) AS t
+        WHERE d.nation_id = n.id
+        GROUP BY n.`name`;
+    </select>-->
+    <select id="countByNation" resultType="com.feiyi.domain.CountByCategory">
+       SELECT n.`name`as nation, count(*) AS countNation
+        FROM declarer d,nation n
+        WHERE d.nation_id = n.id
+        GROUP BY n.`name`;
+    </select>
+
+    <!--    搜索姓名，民族，项目类别，项目名称，地区-->
+    <select id="searchDeclarer" resultMap="declarerMap" parameterType="String">
+        select d.*,
+        c.id cid,c.categoryname categoryname,
+        n.id nid,n.name nname,
+        p.id pid,p.code code,p.name pname,p.category_id pcategory_id,
+        p.public_date public_date,p.report_area preport_area,p.protect_area protect_area
+        from declarer d
+        left join category c on d.category_id=c.id
+        left join nation n on d.nation_id=n.id
+        left join projects p on d.project_code=p.code
+        where CONCAT(d.name,'',n.name,'',c.categoryname,'',p.name,'',d.report_area) LIKE CONCAT('%',#{keyword}, '%')
+    </select>
+</mapper>

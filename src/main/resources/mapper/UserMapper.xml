@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.feiyi.dao.UserDao">
+
+    <resultMap type="com.feiyi.domain.User" id="userMap">
+        <id property="id" column="id" />
+        <result property="username" column="username" />
+        <result property="password" column="password" />
+        <result property="email" column="email" />
+        <result property="phonenumber" column="phonenumber" />
+        <result property="sex" column="sex" />
+        <result property="created_date" column="created_date" />
+        <result property="final_date" column="final_date" />
+        <result property="roleId" column="roleId" />
+        <result property="status" column="status" />
+        <result property="birthday" column="birthday" />
+
+        <collection  property="roles"  ofType="com.feiyi.domain.Role">
+            <id property="id" column="rid" />
+            <result property="rolename" column="rolename" />
+        </collection>
+    </resultMap>
+
+    <!--    注册-->
+    <insert id="addUser" parameterType="User">
+        insert into user (username, password,email,phonenumber,sex,created_date,final_date,roleId,status,birthday,pic) values (#{username}, #{password},#{email},#{phonenumber},#{sex},#{created_date},#{final_date},#{roleId},#{status},#{birthday},#{pic})
+        <selectKey resultType="Integer" order="AFTER" keyProperty="id">
+            SELECT LAST_INSERT_ID() AS id
+        </selectKey>
+    </insert>
+
+    <!--    登录-->
+    <select id="findUser" parameterType="User" resultType="User">
+        select * from user where username=#{username} and password=#{password}
+    </select>
+
+<!--    根据id删除-->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        delete from user
+        where id = #{id}
+    </delete>
+    <!--    根据名字查询-->
+    <select id="findUserByName" resultMap="userMap">
+        select * from user where username=#{username}
+    </select>
+    <!--    根据id查询-->
+    <select id="findById" resultType="User">
+        select u.* , r.rolename as rolename
+        from user u
+        left join role r
+        on
+        u.roleId = r.id
+        where
+        u.id=#{id}
+    </select>
+
+<!--    统计用户数量-->
+    <select id="countUser" resultType="java.lang.Integer">
+        select count(*)
+        from user u,role r
+        where u.roleId = r.id
+        and r.rolename = '普通用户'
+    </select>
+<!--    根据用户名修改图片-->
+<!--    <select id="updatePicByUserName" resultType="com.feiyi.domain.User">
+        update user
+        set pic = #{pic}
+        where username = #{username}
+    </select>-->
+
+<!--    统计最近四年每年用户数量-->
+    <select id="countByYear" resultType="com.feiyi.domain.CountUserByYear">
+        SELECT COUNT(*) as countuser,year(created_date) as year
+        FROM user
+        where year(created_date)>year(NOW()) - 4
+        GROUP BY year(created_date)
+    </select>
+
+<!--    查询所有-->
+    <select id="findAllUser" resultType="com.feiyi.domain.User">
+        select u.*,r.rolename as rolename,
+				CASE u.`status`
+				WHEN 0 then '通过'
+				ELSE '禁用' END AS status_after
+        from user u
+        left join role r
+        on u.roleId = r.id
+        order by year(created_date) desc
+    </select>
+
+<!--    获取用户角色-->
+    <select id="findAllRole" resultType="com.feiyi.domain.Role">
+        select *
+        from role
+    </select>
+<!--    后台：根据用户id对用户信息进行修改-->
+    <update id="updateUserById" parameterType="com.feiyi.domain.User">
+        update user set
+            username = #{username},
+            email = #{email},
+            phonenumber = #{phonenumber},
+            sex = #{sex},
+            final_date = #{final_date},
+            roleId = #{roleId},
+            status = #{status},
+            birthday = #{birthday}
+        where
+            id = #{id}
+    </update>
+
+    <!--    前台：根据用户id对用户信息进行修改-->
+    <update id="updateFontUserById" parameterType="com.feiyi.domain.User">
+        update user set
+            username = #{username},
+            email = #{email},
+            phonenumber = #{phonenumber},
+            sex = #{sex},
+            final_date = #{final_date},
+            birthday = #{birthday},
+            pic = #{pic}
+        where
+            id = #{id}
+    </update>
+
+<!--    修改密码-->
+    <update id="updatePassword" parameterType="com.feiyi.domain.User">
+        update user set
+            password = #{password}
+        where
+            id = #{id}
+    </update>
+
+<!--    根据用户名和用户角色查询-->
+    <select id="searchUser"  parameterType="String" resultType="com.feiyi.domain.User" >
+        select u.*,r.rolename as rolename,
+          CASE u.`status`
+          WHEN 0 then '通过'
+          ELSE '禁用' END AS status_after
+            from user u
+            left join role r
+            on u.roleId = r.id
+            where CONCAT(u.username,'',r.rolename) LIKE CONCAT('%',#{keyword}, '%')
+            order by year(created_date) desc
+    </select>
+</mapper>

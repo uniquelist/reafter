@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.feiyi.dao.PapperDao">
+    <!--    查询所有-->
+    <select id="findAll" resultType="Papper" >
+        select p.*
+        from papper p
+        order by year(pub_date) desc
+    </select>
+
+    <!--    添加文章-->
+    <insert id="addPapper" parameterType="Papper">
+        insert into
+        papper (title,description,author,pub_date,url)
+        values (#{title},#{description},#{author},#{pub_date},#{url})
+        <selectKey resultType="Integer" order="AFTER" keyProperty="id">
+            SELECT LAST_INSERT_ID() AS id
+        </selectKey>
+    </insert>
+
+    <!--    删除文章-->
+    <delete id="deleteById" >
+        delete from papper where id = #{id}
+    </delete>
+
+    <!--    根据输入的内容查询（标题，作者，时间）-->
+    <select id="searchPapper" parameterType="String" resultType="Papper">
+        SELECT * FROM papper
+        WHERE CONCAT(title, ' ',author,'',pub_date) LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+</mapper>
